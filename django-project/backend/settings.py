@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Application definition
 
@@ -38,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
+    'rest_app',
 ]
 
 MIDDLEWARE = [
@@ -51,6 +54,19 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'backend.urls'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        #'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication'
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ]
+}
+
+AUTH_USER_MODEL = 'rest_app.User'
+
 
 TEMPLATES = [
     {
@@ -77,22 +93,11 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': '',
-        'PASSWORD': '',
+        'NAME': 'mqtt-db',
+        'USER': 'mqtt-django',
+        'PASSWORD': 'blablabla',
         'HOST': 'localhost',
         'PORT': '5432',
-    },
-    'mongo': {
-        'ENGINE': 'djongo',
-        'NAME': 'mongo',
-        'CLIENT': {
-            'host': 'mongodb://localhost:27017/',
-            'username': '',
-            'password': '',
-            'authSource': 'admin',
-            'authMechanism': 'SCRAM-SHA-1',
-        },
     },
 }
 
