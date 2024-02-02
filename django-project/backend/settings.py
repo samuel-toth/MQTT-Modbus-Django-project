@@ -57,7 +57,6 @@ ROOT_URLCONF = 'backend.urls'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        #'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication'
     ],
     'DEFAULT_PERMISSION_CLASSES': [
@@ -66,7 +65,7 @@ REST_FRAMEWORK = {
 }
 
 AUTH_USER_MODEL = 'rest_app.User'
-
+APPEND_SLASH = False
 
 TEMPLATES = [
     {
@@ -93,8 +92,8 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'mqtt-db',
-        'USER': 'mqtt-django',
+        'NAME': 'mqttdb',
+        'USER': 'mqttdjango',
         'PASSWORD': 'blablabla',
         'HOST': 'localhost',
         'PORT': '5432',
