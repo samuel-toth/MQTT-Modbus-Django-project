@@ -1,3 +1,4 @@
+import argparse
 import random
 import paho.mqtt.client as mqtt
 import time
@@ -5,11 +6,18 @@ import json
 import requests
 import os
 from dotenv import load_dotenv
+import logging
+
+load_dotenv()
+
+# MQTT Parameters
+MQTT_USERNAME = os.getenv("MQTT_USERNAME")
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
 
 
 class MQTTCryptoClient:
 
-    def __init__(self, broker, port, username, password, publish_topic, command_topic):
+    def __init__(self, broker, port, username, password, data_topic, command_topic):
         self.broker = broker
         self.port = port
         self.username = username
@@ -21,78 +29,65 @@ class MQTTCryptoClient:
         self.running = True
         self.publishing = True
 
-        self.publish_topic = publish_topic + "/" + self.client._client_id.decode()
+        self.data_topic = data_topic + "/" + self.client._client_id.decode()
         self.command_topic = command_topic + "/" + self.client._client_id.decode()
 
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
 
-        print("MQTT client initialized with ID: " +
-              self.client._client_id.decode())
+        logging.info("MQTT client initialized with ID `%s`" %
+                     self.client._client_id.decode())
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            print("Connection to broker successful")
+            logging.info("Connected to broker `%s`" % self.broker)
             self.client.subscribe(self.command_topic)
         else:
-            print(f"Connection to broker failed, return code {rc}")
+            logging.error("Failed to connect with error: %s" % rc)
 
     def on_message(self, client, userdata, msg):
-        print("Received command `%s`" % msg.payload.decode() +
-              " at " + time.strftime("%H:%M:%S", time.localtime()))
-        print(msg.payload.decode())
+
+        logging.info("Received command `%s`" % msg.payload.decode()
+                     )
         if msg.payload.decode() == "start":
-            print("Starting client...")
+            logging.info("Starting client via command")
             self.running = True
         elif msg.payload.decode() == "stop":
-            print("Stopping client...")
+            logging.info("Stopping client via command")
             self.running = False
         elif msg.payload.decode() == "start_publish":
-            print("Starting publishing...")
+            logging.info("Starting publishing via command")
             self.publishing = True
         elif msg.payload.decode() == "stop_publish":
-            print("Stopping publishing...")
+            logging.info("Stopping publishing via command")
             self.publishing = False
         else:
-            print("Unknown command received")
+            logging.error("Invalid command `%s`" % msg.payload.decode())
 
     def run(self):
-        """
-        Runs the MQTT client.
-
-        Connects to the broker, starts the client loop, and continuously publishes data if enabled.
-        The client runs until interrupted by a keyboard interrupt or stopped by a command. 
-        """
         self.client.connect(self.broker, self.port)
         self.client.loop_start()
-        print("Running client...")
+        logging.info("Client loop started")
         try:
             while self.running:
                 if self.publishing:
                     self.publish_data()
                 time.sleep(120)
         except KeyboardInterrupt:
-            print("Exiting...")
+            logging.info("Client interrupted by keyboard")
         finally:
             self.loop_stop()
             self.client.disconnect()
 
     def publish_data(self):
-        """
-        Publishes cryptocurrency data to the MQTT broker.
-
-        Args:
-            client (mqtt.Client): The MQTT client object.
-        """
         try:
             data = self.fetch_data()
             if data:
                 self.client.publish(
-                    self.publish_topic, json.dumps(data))
-                print("Published data to topic `%s`" % self.publish_topic +
-                      " at " + time.strftime("%H:%M:%S", time.localtime()))
+                    self.data_topic, json.dumps(data))
+                logging.info("Published data to topic `%s`" % self.data_topic)
         except Exception as e:
-            print("Publishing failed with error: %s" % e)
+            logging.error("Failed to publish data with error: %s" % e)
 
     def fetch_data(self):
         """
@@ -125,21 +120,26 @@ class MQTTCryptoClient:
             ]
             return {'timestamp': timestamp, 'crypto': cryptos}
         except requests.RequestException as e:
-            print(f"Failed to fetch data with error: {e}")
-
-
-load_dotenv()
-
-# MQTT Parameters
-MQTT_BROKER = os.getenv("MQTT_BROKER")
-MQTT_PORT = int(os.getenv("MQTT_PORT"))
-MQTT_PUBLISH_TOPIC = os.getenv("MQTT_PUBLISH_TOPIC")
-MQTT_COMMAND_TOPIC = os.getenv("MQTT_COMMAND_TOPIC")
-MQTT_USERNAME = os.getenv("MQTT_USERNAME")
-MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
+            logging.error("Failed to fetch data with error: %s" % e)
+            return None
 
 
 if __name__ == '__main__':
-    client = MQTTCryptoClient(MQTT_BROKER, MQTT_PORT, MQTT_USERNAME,
-                              MQTT_PASSWORD, MQTT_PUBLISH_TOPIC, MQTT_COMMAND_TOPIC)
+
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(message)s')
+
+    parser = argparse.ArgumentParser(description="MQTT Crypto Client")
+    parser.add_argument("--broker", type=str, default="localhost",
+                        help="The MQTT broker address, default is localhost")
+    parser.add_argument("--port", type=int, default=1883,
+                        help="The MQTT broker port, default is 1883")
+    parser.add_argument("--topic", type=str, default="crypto/data",
+                        help="The MQTT topic to publish data, default is crypto/data")
+    parser.add_argument("--command", type=str, default="crypto/command",
+                        help="The MQTT topic to receive commands, default is crypto/command")
+    args = parser.parse_args()
+
+    client = MQTTCryptoClient(args.broker, args.port, MQTT_USERNAME,
+                              MQTT_PASSWORD, args.topic, args.command)
     client.run()
