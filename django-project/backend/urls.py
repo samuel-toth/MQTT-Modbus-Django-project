@@ -4,10 +4,10 @@ from rest_app import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/register', views.UserRegister),
-    path('api/login', views.UserLogin),
-    path('api/logout', views.UserLogout),
-    path('api/mqtt/data', views.MQTTData),
-    path('api/mqtt/data/device', views.MQTTDataDevice),
-    path('api/mqtt/command', views.MQTTCommand),
+    path('api/register', views.UserRegisterView),
+    path('api/login', views.UserLoginView),
+    path('api/logout', views.UserLogoutView),
+    path('api/mqtt/data', views.GetMQTTDataView),
+    path('api/mqtt/data/device', views.GetMQTTDeviceDataView),
+    path('api/mqtt/command', views.SendMQTTCommandView),
 ]
