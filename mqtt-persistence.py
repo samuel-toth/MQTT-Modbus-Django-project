@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-class MQTTMongoDBBridge:
+class MQTTMongoBridge:
     def __init__(
         self,
         broker_host,
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        bridge = MQTTMongoDBBridge(
+        bridge = MQTTMongoBridge(
             broker_host=args.broker_host,
             broker_port=args.broker_port,
             topic=args.topic,
