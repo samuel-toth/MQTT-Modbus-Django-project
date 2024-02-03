@@ -44,23 +44,21 @@ class MQTTCryptoClient:
         if rc == 0:
             logging.info(f"Connected to broker %s" % self.broker)
             self.client.subscribe(self.command_topic)
+            logging.info(f"Subscribed to command topic %s" % self.command_topic)
         else:
             logging.error(f"Failed to connect with error: %s" % rc)
 
     def on_message(self, client, userdata, msg):
 
         logging.info(f"Received command %s" % msg.payload.decode())
-        if msg.payload.decode() == "start":
-            logging.info(f"Starting client via command")
-            self.running = True
-        elif msg.payload.decode() == "stop":
-            logging.info(f"Stopping client via command")
+        if msg.payload.decode() == "client_stop":
+            logging.info(f"Stopping client")
             self.running = False
-        elif msg.payload.decode() == "start_publish":
-            logging.info(f"Starting publishing via command")
+        elif msg.payload.decode() == "publish_start":
+            logging.info(f"Starting publishing")
             self.publishing = True
-        elif msg.payload.decode() == "stop_publish":
-            logging.info(f"Stopping publishing via command")
+        elif msg.payload.decode() == "publish_stop":
+            logging.info(f"Stopping publishing")
             self.publishing = False
         else:
             logging.error(f"Invalid command %s" % msg.payload.decode())
@@ -77,8 +75,8 @@ class MQTTCryptoClient:
         except Exception as e:
             logging.error(f"Client error: %s" % e)
         finally:
-            logging.info(f"Stopping client")
-            self.loop_stop()
+            self.client.disconnect()
+            logging.info(f"Client disconnected")
 
     def publish_data(self):
         try:
@@ -157,6 +155,3 @@ if __name__ == "__main__":
         client.run()
     except KeyboardInterrupt:
         logging.info(f"Client stopped via keyboard interrupt")
-    finally:
-        client.client.disconnect()
-        logging.info(f"Client disconnected from broker")
