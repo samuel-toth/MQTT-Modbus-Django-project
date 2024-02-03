@@ -97,6 +97,9 @@ DATABASES = {
         'PASSWORD': 'blablabla',
         'HOST': 'localhost',
         'PORT': '5432',
+        'TEST': {
+            'NAME': 'test_mqttdb'
+        }
     },
 }
 
