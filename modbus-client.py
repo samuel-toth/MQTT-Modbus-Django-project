@@ -1,117 +1,113 @@
-import time
 import os
+import time
+import logging
 import argparse
-from pymodbus import ModbusException
-from pymodbus.client import ModbusTcpClient
-from dotenv import load_dotenv
+
 from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure
-
-load_dotenv()
-
-
-# Argument parsing for command line options
-parser = argparse.ArgumentParser(
-    description="Modbus to MongoDB data transfer configuration.")
-parser.add_argument("--modbus_host", type=str, default=os.getenv(
-    "MODBUS_HOST", "localhost"), help="Host for the Modbus server")
-parser.add_argument("--modbus_port", type=int, default=int(
-    os.getenv("MODBUS_PORT", 5020)), help="Port for the Modbus server")
-parser.add_argument("--mongo_host", type=str, default=os.getenv("MONGO_HOST",
-                    "localhost"), help="Host for the MongoDB server")
-parser.add_argument("--mongo_port", type=int, default=int(
-    os.getenv("MONGO_PORT", 27017)), help="Port for the MongoDB server")
-args = parser.parse_args()
+from pymodbus.client import ModbusTcpClient
+from pymodbus.exceptions import ModbusException
+from pymodbus.payload import BinaryPayloadDecoder, Endian
 
 
-def connect_to_modbus(host, port):
-    """
-    Connects to a Modbus server.
+class ModbusPersistenceClient:
 
-    Args:
-        host (str): The IP address or hostname of the Modbus server.
-        port (int): The port number of the Modbus server.
+    def __init__(
+        self,
+        modbus_host,
+        modbus_port,
+        mongo_host,
+        mongo_port,
+        mongo_db,
+        mongo_collection,
+        interval,
+    ):
 
-    Returns:
-        ModbusTcpClient: The connected Modbus client object, or None if the connection failed.
-    """
+        self.modbus_client = ModbusTcpClient(modbus_host, modbus_port)
+
+        self.mongo_client = MongoClient(mongo_host, mongo_port)
+        self.db = self.mongo_client[mongo_db]
+        self.collection = self.db[mongo_collection]
+
+        self.interval = interval
+
+        if self.modbus_client.connect():
+            logging.info(f"Connected to Modbus server")
+        else:
+            raise ModbusException(f"Failed to connect to Modbus server")
+
+    def run(self):
+        try:
+            while True:
+                response = self.modbus_client.read_holding_registers(
+                    address=0, count=2, slave=0x01
+                )
+                if not response.isError():
+                    builder = BinaryPayloadDecoder.fromRegisters(
+                        response.registers, byteorder=Endian.LITTLE
+                    )
+
+                    decoded_value = builder.decode_32bit_float()
+
+                    self.collection.insert_one({"value": decoded_value})
+                    logging.info(
+                        f"Value {decoded_value} persisted to database")
+                time.sleep(int(self.interval))
+        except Exception as e:
+            logging.error(f"Client error: {e}")
+        finally:
+            logging.info(f"Stoping client")
+            if self.modbus_client:
+                self.modbus_client.close()
+            if self.mongo_client:
+                self.mongo_client.close()
+
+
+if __name__ == "__main__":
+
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+
+    parser = argparse.ArgumentParser(
+        description="Modbus client for data persistence")
+    parser.add_argument(
+        "--modbus_host",
+        type=str,
+        default="localhost",
+        help="The Modbus server address, default is localhost",
+    )
+    parser.add_argument(
+        "--modbus_port",
+        type=int,
+        default=5020,
+        help="The Modbus server port, default is 5020",
+    )
+    parser.add_argument(
+        "--mongo_host", type=str, default="localhost", help="The MongoDB host address"
+    )
+    parser.add_argument(
+        "--mongo_port", type=int, default=27017, help="The MongoDB port"
+    )
+    parser.add_argument(
+        "--interval",
+        type=int,
+        default=60,
+        help="Interval in seconds to read and persist data, default is 60",
+    )
+    args = parser.parse_args()
+
     try:
-        client = ModbusTcpClient(host, port)
-        if client.connect():
-            return client
-    except ModbusException as e:
-        print(f"Modbus connection error: {e}")
-        return None
+        modbus_client = ModbusPersistenceClient(
+            modbus_host=args.modbus_host,
+            modbus_port=args.modbus_port,
+            mongo_host=args.mongo_host,
+            mongo_port=args.mongo_port,
+            mongo_db=os.getenv("MONGO_DB"),
+            mongo_collection=os.getenv("MONGO_COLLECTION"),
+            interval=args.interval,
+        )
 
-
-def connect_to_mongodb(host, port):
-    """
-    Connects to MongoDB server.
-
-    Args:
-        host (str): The MongoDB server host.
-        port (int): The MongoDB server port.
-
-    Returns:
-        MongoClient: The MongoDB client object if the connection is successful, None otherwise.
-    """
-    try:
-        client = MongoClient(host, port)
-        return client
-    except ConnectionFailure as e:
-        print(f"MongoDB connection error: {e}")
-        return None
-
-
-def read_and_store_data(client, mongo_collection):
-    """
-    Reads data from a Modbus client and stores it in a MongoDB collection.
-
-    Args:
-        client (ModbusClient): The Modbus client used to read data.
-        mongo_collection (pymongo.collection.Collection): The MongoDB collection to store the data.
-
-    Raises:
-        KeyboardInterrupt: If the data collection is interrupted by the user.
-        Exception: If an error occurs during data collection.
-
-    """
-    try:
-        while True:
-            response = client.read_holding_registers(
-                address=0, count=100, slave=0x01)
-            if not response.isError():
-                value = response.registers
-                print(f"Read value: {value}")
-                data = {"value": value}
-                mongo_collection.insert_one(data)
-            else:
-                print("Error reading register")
-            time.sleep(10)
+        modbus_client.run()
     except KeyboardInterrupt:
-        print("Stopping data collection...")
-    except Exception as e:
-        print(f"Error during data collection: {e}")
-
-
-def main():
-    modbus_client = connect_to_modbus(args.modbus_host, args.modbus_port)
-    if modbus_client is None:
-        return
-
-    mongo_client = connect_to_mongodb(args.mongo_host, args.mongo_port)
-    if mongo_client is None:
-        modbus_client.close()
-        return
-
-    db = mongo_client.modbus
-    collection = db.data
-
-    read_and_store_data(modbus_client, collection)
-
-    modbus_client.close()
-    mongo_client.close()
-
-
-if __name__ == '__main__':
-    main()
+        modbus_client.close_connections()
+        logging.info(f"Service stopped via keyboard interrupt")
