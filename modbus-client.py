@@ -35,8 +35,7 @@ class ModbusPersistenceClient:
         self,
         modbus_host,
         modbus_port,
-        mongo_host,
-        mongo_port,
+        mongo_uri,
         mongo_db,
         mongo_collection,
         interval,
@@ -61,7 +60,7 @@ class ModbusPersistenceClient:
             server_hostname="localhost",
         )
 
-        self.mongo_client = MongoClient(mongo_host, mongo_port)
+        self.mongo_client = MongoClient(mongo_uri)
         self.db = self.mongo_client[mongo_db]
         self.collection = self.db[mongo_collection]
 
@@ -131,15 +130,6 @@ if __name__ == "__main__":
         help="The Modbus server port, default is 5020",
     )
     parser.add_argument(
-        "--mongo_host",
-        type=str,
-        default="localhost",
-        help="The MongoDB host address"
-    )
-    parser.add_argument(
-        "--mongo_port", type=int, default=27017, help="The MongoDB port"
-    )
-    parser.add_argument(
         "--interval",
         type=int,
         default=60,
@@ -151,8 +141,7 @@ if __name__ == "__main__":
         mb_persistence_client = ModbusPersistenceClient(
             modbus_host=args.modbus_host,
             modbus_port=args.modbus_port,
-            mongo_host=args.mongo_host,
-            mongo_port=args.mongo_port,
+            mongo_uri=os.getenv("MONGO_URI"),
             mongo_db=os.getenv("MONGO_DB"),
             mongo_collection=os.getenv("MODBUS_MONGO_COLLECTION"),
             interval=args.interval,

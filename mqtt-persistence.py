@@ -35,8 +35,7 @@ class MQTTMongoBridge:
         broker_host,
         broker_port,
         topic,
-        mongo_host,
-        mongo_port,
+        mongo_uri,
         mongo_db,
         mongo_collection,
     ):
@@ -44,7 +43,7 @@ class MQTTMongoBridge:
         self.broker_port = broker_port
         self.topic = topic
 
-        self.mongo_client = MongoClient(mongo_host, mongo_port)
+        self.mongo_client = MongoClient(mongo_uri)
         self.db = self.mongo_client[mongo_db]
         self.collection = self.db[mongo_collection]
 
@@ -120,18 +119,6 @@ if __name__ == "__main__":
         default="crypto/data",
         help="The MQTT topic to subscribe to",
     )
-    parser.add_argument(
-        "--mongo_host",
-        type=str,
-        default="localhost",
-        help="The MongoDB host address"
-    )
-    parser.add_argument(
-        "--mongo_port",
-        type=int,
-        default=27017,
-        help="The MongoDB port"
-    )
     args = parser.parse_args()
 
     try:
@@ -139,8 +126,7 @@ if __name__ == "__main__":
             broker_host=args.broker_host,
             broker_port=args.broker_port,
             topic=args.topic,
-            mongo_host=args.mongo_host,
-            mongo_port=args.mongo_port,
+            mongo_uri=os.getenv("MONGO_URI"),
             mongo_db=os.getenv("MONGO_DB"),
             mongo_collection=os.getenv("MQTT_MONGO_COLLECTION"),
         )
