@@ -10,4 +10,6 @@ urlpatterns = [
     path('api/mqtt/data', views.GetMQTTDataView),
     path('api/mqtt/data/device', views.GetMQTTDeviceDataView),
     path('api/mqtt/command', views.SendMQTTCommandView),
+    path('api/modbus/data', views.GetModbusDataView),
+    path('api/modbus/data/timestamp', views.GetModbusDataByTimestampView),
 ]

@@ -82,7 +82,7 @@ def UserLogoutView(request):
 @permission_classes([permissions.IsAuthenticated])
 def GetMQTTDataView(request):
     try:
-        data = mongo_service.find_all()
+        data = mongo_service.find_all_mqtt_data()
 
         return Response(
             {
@@ -113,9 +113,7 @@ def GetMQTTDeviceDataView(request):
                 {"data": json.loads(json_util.dumps(data))}, status=status.HTTP_200_OK
             )
     except Exception as e:
-        return Response(
-            data=str(e), status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response(data=str(e), status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["POST"])
@@ -131,7 +129,8 @@ def SendMQTTCommandView(request):
             )
         if "command" not in data:
             return Response(
-                data={"error": "Command is required."}, status=status.HTTP_400_BAD_REQUEST
+                data={"error": "Command is required."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         device_id = data["device_id"]
         command = data["command"]
@@ -139,6 +138,44 @@ def SendMQTTCommandView(request):
         mqtt_service.send_command(device_id, command)
         return Response(status=status.HTTP_200_OK)
     except Exception as e:
+        return Response(data={"error": e}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def GetModbusDataView(request):
+    try:
+        data = mongo_service.find_all_modbus_data()
+
         return Response(
-            data={"error": e}, status=status.HTTP_400_BAD_REQUEST
+            {
+                "type": "success",
+                "message": "Data fetched successfully",
+                "data": json.loads(json_util.dumps(data)),
+            },
+            status=status.HTTP_200_OK,
         )
+    except Exception:
+        return Response(
+            data={"error": "An error occurred."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def GetModbusDataByTimestampView(request):
+    try:
+        data = request.query_params
+        if "timestamp" not in data or not data["timestamp"].isdigit():
+            return Response(
+                {"error": "UNIX timestamp is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        else:
+            data = mongo_service.find_modbus_data_by_timestamp(
+                data["timestamp"])
+            return Response(
+                {"data": json.loads(json_util.dumps(data))}, status=status.HTTP_200_OK
+            )
+    except Exception as e:
+        return Response(data=str(e), status=status.HTTP_400_BAD_REQUEST)
