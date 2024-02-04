@@ -94,7 +94,7 @@ def GetMQTTDataView(request):
         )
     except Exception:
         return Response(
-            data={"error": "An error occurred"}, status=status.HTTP_400_BAD_REQUEST
+            data={"error": "An error occurred."}, status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -102,20 +102,19 @@ def GetMQTTDataView(request):
 @permission_classes([permissions.IsAuthenticated])
 def GetMQTTDeviceDataView(request):
     try:
-        device_id = request.data["device_id"]
-        if device_id is None:
+        data = request.query_params
+        if "device_id" not in data:
             return Response(
-                {"error": "device_id is required"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Device ID is required."}, status=status.HTTP_400_BAD_REQUEST
             )
         else:
-            data = mongo_service.find_by_device_id(device_id)
-
+            data = mongo_service.find_by_device_id(data["device_id"])
             return Response(
                 {"data": json.loads(json_util.dumps(data))}, status=status.HTTP_200_OK
             )
     except Exception as e:
         return Response(
-            data={"error": "An error occurred"}, status=status.HTTP_400_BAD_REQUEST
+            data=str(e), status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -124,12 +123,22 @@ def GetMQTTDeviceDataView(request):
 def SendMQTTCommandView(request):
     try:
         data = request.data
+
+        if "device_id" not in data:
+            return Response(
+                data={"error": "Device ID is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if "command" not in data:
+            return Response(
+                data={"error": "Command is required."}, status=status.HTTP_400_BAD_REQUEST
+            )
         device_id = data["device_id"]
         command = data["command"]
 
         mqtt_service.send_command(device_id, command)
         return Response(status=status.HTTP_200_OK)
-    except Exception:
+    except Exception as e:
         return Response(
-            data={"error": "An error occurred"}, status=status.HTTP_400_BAD_REQUEST
+            data={"error": e}, status=status.HTTP_400_BAD_REQUEST
         )
