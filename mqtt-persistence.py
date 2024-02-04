@@ -12,6 +12,21 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class MQTTMongoBridge:
+    """
+    A class that represents a bridge between MQTT and MongoDB.
+
+    This class subscribes to an MQTT topic, receives data, and persists it to a MongoDB collection at a specified interval.
+
+    Args:
+        broker_host (str): The hostname of the MQTT broker.
+        broker_port (int): The port number of the MQTT broker.
+        topic (str): The MQTT topic to subscribe to.
+        mongo_host (str): The hostname of the MongoDB server.
+        mongo_port (int): The port number of the MongoDB server.
+        mongo_db (str): The name of the MongoDB database.
+        mongo_collection (str): The name of the MongoDB collection.
+    """
+
     def __init__(
         self,
         broker_host,

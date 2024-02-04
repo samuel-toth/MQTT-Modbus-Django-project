@@ -18,6 +18,16 @@ load_dotenv()
 
 
 class ModbusServer:
+    """
+    A class representing a Modbus server for fetching and storing Bitcoin price to registers.
+
+    This server fetches the current Bitcoin price from CoinCap API and stores it in a Modbus register at a specified interval.
+
+    Args:
+        host (str): The host address of the Modbus server.
+        port (int): The port number of the Modbus server.
+        interval (int): The interval in seconds between data updates.
+    """
 
     def __init__(self, host, port, interval):
         self.host = host

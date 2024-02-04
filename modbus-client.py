@@ -10,6 +10,21 @@ from pymodbus.payload import BinaryPayloadDecoder, Endian
 
 
 class ModbusPersistenceClient:
+    """
+    A class representing a Modbus persistence client.
+
+    This client connects to a Modbus server, reads holding registers 
+    and persists the values to a MongoDB database at a specified interval.
+
+    Args:
+        modbus_host (str): The host address of the Modbus server.
+        modbus_port (int): The port number of the Modbus server.
+        mongo_host (str): The host address of the MongoDB server.
+        mongo_port (int): The port number of the MongoDB server.
+        mongo_db (str): The name of the MongoDB database.
+        mongo_collection (str): The name of the MongoDB collection.
+        interval (int): The interval in seconds between each reading and persistence.
+    """
 
     def __init__(
         self,

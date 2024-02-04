@@ -2,7 +2,6 @@ import os
 import time
 import json
 import random
-import random
 import logging
 import argparse
 import requests
@@ -15,6 +14,20 @@ load_dotenv()
 
 
 class MQTTCryptoClient:
+    """
+    A class representing an MQTT client for publishing crypto data.
+
+    This client fetches crypto data from CoinCap API and publishes it to an MQTT broker at a specified interval.
+
+    Args:
+        broker (str): The MQTT broker address.
+        port (int): The MQTT broker port.
+        username (str): The username for authentication.
+        password (str): The password for authentication.
+        data_topic (str): The MQTT topic for publishing data.
+        command_topic (str): The MQTT topic for receiving commands.
+        interval (int): The interval (in seconds) between data publishing.
+    """
 
     def __init__(
         self, broker, port, username, password, data_topic, command_topic, interval
