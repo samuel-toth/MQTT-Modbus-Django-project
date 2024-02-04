@@ -41,9 +41,7 @@ def update_registers(context, interval):
             payload = builder.to_registers()
             context[0].setValues(3, address, payload)
             address + 1
-            logging.info(
-                f"Updated register values at address {address}"
-            )
+        logging.info("Updated register values")
 
         time.sleep(interval)
 
