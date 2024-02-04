@@ -24,9 +24,11 @@ class MQTTCryptoClient:
         self.username = username
         self.password = password
         self.client = mqtt.Client(
-            "cryptodev" + time.strftime("%H%M") + str(random.randint(0, 1000)).zfill(4)
+            "cryptodev" + time.strftime("%H%M") +
+            str(random.randint(0, 1000)).zfill(4)
         )
-        self.client.username_pw_set(username=self.username, password=self.password)
+        self.client.username_pw_set(
+            username=self.username, password=self.password)
         self.running = True
         self.publishing = True
         self.data_topic = data_topic + "/" + self.client._client_id.decode()
@@ -44,7 +46,8 @@ class MQTTCryptoClient:
         if rc == 0:
             logging.info(f"Connected to broker %s" % self.broker)
             self.client.subscribe(self.command_topic)
-            logging.info(f"Subscribed to command topic %s" % self.command_topic)
+            logging.info(f"Subscribed to command topic %s" %
+                         self.command_topic)
         else:
             logging.error(f"Failed to connect with error: %s" % rc)
 
