@@ -140,8 +140,8 @@ class GetMQTTDeviceDataViewTest(APITestCase):
             {"device_id": "1", "data": "data1"},
             {"device_id": "1", "data": "data2"},
         ]
-
         mock_find_by_device_id.return_value = mock_data
+        
         response = self.client.get("/api/mqtt/data/device", {"device_id": "1"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -150,7 +150,9 @@ class GetMQTTDeviceDataViewTest(APITestCase):
 
     def test_get_mqtt_device_data_not_authenticated(self):
         self.client.credentials()
+
         response = self.client.get("/api/mqtt/data/device", {"device_id": "1"})
+
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(
             response.json()[
@@ -159,12 +161,15 @@ class GetMQTTDeviceDataViewTest(APITestCase):
 
     def test_get_mqtt_device_data_invalid_token(self):
         self.client.credentials(HTTP_AUTHORIZATION="Token invalidtoken")
+
         response = self.client.get("/api/mqtt/data/device", {"device_id": "1"})
+
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(response.json()["detail"], "Invalid token.")
 
     def test_get_mqtt_device_data_no_device_id(self):
         response = self.client.get("/api/mqtt/data/device", {})
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["error"], "Device ID is required.")
 
@@ -190,9 +195,11 @@ class SendMQTTCommandViewTest(APITestCase):
 
     def test_send_mqtt_command_not_authenticated(self):
         self.client.credentials()
+
         response = self.client.post(
             "/api/mqtt/command", {"device_id": "1", "command": "on"}
         )
+
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(
             response.json()[
@@ -201,18 +208,22 @@ class SendMQTTCommandViewTest(APITestCase):
 
     def test_send_mqtt_command_invalid_token(self):
         self.client.credentials(HTTP_AUTHORIZATION="Token invalidtoken")
+
         response = self.client.post(
             "/api/mqtt/command", {"device_id": "1", "command": "on"}
         )
+
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(response.json()["detail"], "Invalid token.")
 
     def test_send_mqtt_command_no_device_id(self):
         response = self.client.post("/api/mqtt/command", {"command": "on"})
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["error"], "Device ID is required.")
 
     def test_send_mqtt_command_no_command(self):
         response = self.client.post("/api/mqtt/command", {"device_id": "1"})
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["error"], "Command is required.")
