@@ -1,4 +1,4 @@
-# MQTT-Modbus-Django-Project
+# Integrating MQTT, Modbus, and Django
 
 ## Description
 
@@ -29,9 +29,12 @@ The Django backend provides REST APIs to retrieve the data stored in the Mongo d
 4. Install Postgres and start the database
 5. Install Mosquitto MQTT broker and start the service
 6. Fill in the environment variables in the `.env` file
+7. Run the migrations using `python manage.py makemigrations` and `python manage.py migrate
+
 
 ## Usage
 
 1. Start the MQTT client using `python mqtt_client.py` and the MQTT persistence using `python mqtt_persistence.py`
 2. Start the Modbus server using `python modbus_server.py` and the Modbus client using `python modbus_client.py`
 6. Start the Django backend using `python manage.py runserver`
+7. Access the REST APIs using the URL `http://localhost:8000/api/`
