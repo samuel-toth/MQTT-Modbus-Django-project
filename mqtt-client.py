@@ -1,4 +1,5 @@
 import os
+import ssl
 import time
 import json
 import random
@@ -39,6 +40,10 @@ class MQTTCryptoClient:
         self.client = mqtt.Client(
             "cryptodev" + time.strftime("%H%M") +
             str(random.randint(0, 1000)).zfill(4)
+        )
+        self.client.tls_set(
+            ca_certs=os.getenv("MQTT_CA_CERT_PATH"),
+            tls_version=ssl.PROTOCOL_TLS,
         )
         self.client.username_pw_set(
             username=self.username, password=self.password)

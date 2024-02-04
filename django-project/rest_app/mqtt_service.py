@@ -1,4 +1,5 @@
 import os
+import ssl
 
 from paho.mqtt.client import Client
 from dotenv import load_dotenv
@@ -11,6 +12,7 @@ MQTT_DATA_TOPIC = os.getenv("MQTT_DATA_TOPIC") or "mqttdata"
 MQTT_COMMAND_TOPIC = os.getenv("MQTT_COMMAND_TOPIC") or "mqttcommand"
 MQTT_USERNAME = os.getenv("MQTT_USERNAME")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
+MQTT_CA_CERT = os.getenv("MQTT_CA_CERT_PATH")
 
 
 class MQTTService:
@@ -26,6 +28,10 @@ class MQTTService:
         self.username = username
         self.password = password
         self.client = Client()
+        self.client.tls_set(
+            ca_certs=MQTT_CA_CERT,
+            tls_version=ssl.PROTOCOL_TLS,
+        )
         self.client.username_pw_set(username, password)
         self.client.connect(broker, port)
         self.client.loop_start()

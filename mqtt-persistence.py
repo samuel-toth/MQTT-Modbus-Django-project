@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import argparse
+import ssl
 
 import paho.mqtt.client as mqtt
 
@@ -46,6 +47,10 @@ class MQTTMongoBridge:
         self.collection = self.db[mongo_collection]
 
         self.mqtt_client = mqtt.Client()
+        self.mqtt_client.tls_set(
+            ca_certs=os.getenv("MQTT_CA_CERT_PATH"),
+            tls_version=ssl.PROTOCOL_TLS,
+        )
         self.mqtt_client.username_pw_set(
             username=os.getenv("MQTT_USERNAME"), password=os.getenv("MQTT_PASSWORD")
         )
