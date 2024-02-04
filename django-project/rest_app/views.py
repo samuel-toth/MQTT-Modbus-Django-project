@@ -29,7 +29,8 @@ def UserRegisterView(request):
             if user:
                 return Response(status=status.HTTP_201_CREATED)
     except ValidationError as e:
-        return Response(data={"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data={"error": e.detail},
+                        status=status.HTTP_400_BAD_REQUEST)
     except Exception:
         return Response(
             data={"error": "An error occurred"},
@@ -46,23 +47,24 @@ def UserLoginView(request):
         if serializer.is_valid(raise_exception=True):
             clean_data = serializer.validated_data
             user = authenticate(
-                username=clean_data["username"], password=clean_data["password"]
-            )
+                username=clean_data["username"],
+                password=clean_data["password"])
             if user is not None:
                 login(request, user)
                 token, created = Token.objects.get_or_create(user=user)
-                return Response({"token": token.key}, status=status.HTTP_200_OK)
+                return Response({"token": token.key},
+                                status=status.HTTP_200_OK)
             else:
-                return Response(
-                    {"error": "Invalid Credentials"},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
+                return Response({"error": "Invalid Credentials"},
+                                status=status.HTTP_401_UNAUTHORIZED,)
     except ValidationError as e:
-        return Response(data={"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            data={"error": e.detail},
+            status=status.HTTP_400_BAD_REQUEST)
     except Exception:
         return Response(
-            data={"error": "An error occurred"}, status=status.HTTP_400_BAD_REQUEST
-        )
+            data={"error": "An error occurred"},
+            status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["POST"])
@@ -73,9 +75,8 @@ def UserLogoutView(request):
         logout(request)
         return Response(status=status.HTTP_205_RESET_CONTENT)
     except Exception:
-        return Response(
-            data={"error": "An error occurred"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response(data={"error": "An error occurred"},
+                        status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["GET"])
@@ -94,8 +95,8 @@ def GetMQTTDataView(request):
         )
     except Exception:
         return Response(
-            data={"error": "An error occurred."}, status=status.HTTP_400_BAD_REQUEST
-        )
+            data={"error": "An error occurred."},
+            status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["GET"])
@@ -105,13 +106,13 @@ def GetMQTTDeviceDataView(request):
         data = request.query_params
         if "device_id" not in data:
             return Response(
-                {"error": "Device ID is required."}, status=status.HTTP_400_BAD_REQUEST
-            )
+                {"error": "Device ID is required."},
+                status=status.HTTP_400_BAD_REQUEST)
         else:
             data = mongo_service.find_by_device_id(data["device_id"])
             return Response(
-                {"data": json.loads(json_util.dumps(data))}, status=status.HTTP_200_OK
-            )
+                {"data": json.loads(json_util.dumps(data))},
+                status=status.HTTP_200_OK)
     except Exception as e:
         return Response(data=str(e), status=status.HTTP_400_BAD_REQUEST)
 
@@ -156,9 +157,8 @@ def GetModbusDataView(request):
             status=status.HTTP_200_OK,
         )
     except Exception:
-        return Response(
-            data={"error": "An error occurred."}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response(data={"error": "An error occurred."},
+                        status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["GET"])
@@ -174,8 +174,7 @@ def GetModbusDataByTimestampView(request):
         else:
             data = mongo_service.find_modbus_data_by_timestamp(
                 data["timestamp"])
-            return Response(
-                {"data": json.loads(json_util.dumps(data))}, status=status.HTTP_200_OK
-            )
+            return Response({"data": json.loads(json_util.dumps(data))},
+                            status=status.HTTP_200_OK)
     except Exception as e:
         return Response(data=str(e), status=status.HTTP_400_BAD_REQUEST)

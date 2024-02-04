@@ -18,7 +18,8 @@ class MQTTCryptoClient:
     """
     A class representing an MQTT client for publishing crypto data.
 
-    This client fetches crypto data from CoinCap API and publishes it to an MQTT broker at a specified interval.
+    This client fetches crypto data from CoinCap API and publishes
+    it to an MQTT broker at a specified interval.
 
     Args:
         broker (str): The MQTT broker address.
@@ -31,7 +32,8 @@ class MQTTCryptoClient:
     """
 
     def __init__(
-        self, broker, port, username, password, data_topic, command_topic, interval
+        self, broker, port, username, password,
+        data_topic, command_topic, interval
     ):
         self.broker = broker
         self.port = port
@@ -49,64 +51,64 @@ class MQTTCryptoClient:
             username=self.username, password=self.password)
         self.running = True
         self.publishing = True
-        self.data_topic = data_topic + "/" + self.client._client_id.decode()
-        self.command_topic = command_topic + "/" + self.client._client_id.decode()
+        self.data_topic = data_topic+"/"+self.client._client_id.decode()
+        self.command_topic = command_topic+"/"+self.client._client_id.decode()
         self.interval = interval
 
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
 
         logging.info(
-            f"MQTT client initialized with ID: %s" % self.client._client_id.decode()
+            "MQTT client initialized, ID: %s" % self.client._client_id.decode()
         )
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            logging.info(f"Connected to broker %s" % self.broker)
+            logging.info("Connected to broker %s" % self.broker)
             self.client.subscribe(self.command_topic)
-            logging.info(f"Subscribed to command topic %s" %
+            logging.info("Subscribed to command topic %s" %
                          self.command_topic)
         else:
-            logging.error(f"Failed to connect with error: %s" % rc)
+            logging.error("Failed to connect with error: %s" % rc)
 
     def on_message(self, client, userdata, msg):
 
-        logging.info(f"Received command %s" % msg.payload.decode())
+        logging.info("Received command %s" % msg.payload.decode())
         if msg.payload.decode() == "client_stop":
-            logging.info(f"Stopping client")
+            logging.info("Stopping client")
             self.running = False
         elif msg.payload.decode() == "publish_start":
-            logging.info(f"Starting publishing")
+            logging.info("Starting publishing")
             self.publishing = True
         elif msg.payload.decode() == "publish_stop":
-            logging.info(f"Stopping publishing")
+            logging.info("Stopping publishing")
             self.publishing = False
         else:
-            logging.error(f"Invalid command %s" % msg.payload.decode())
+            logging.error("Invalid command %s" % msg.payload.decode())
 
     def run(self):
         self.client.connect(self.broker, self.port)
         self.client.loop_start()
-        logging.info(f"Client loop started")
+        logging.info("Client loop started")
         try:
             while self.running:
                 if self.publishing:
                     self.publish_data()
                 time.sleep(int(self.interval))
         except Exception as e:
-            logging.error(f"Client error: %s" % e)
+            logging.error("Client error: %s" % e)
         finally:
             self.client.disconnect()
-            logging.info(f"Client disconnected")
+            logging.info("Client disconnected")
 
     def publish_data(self):
         try:
             data = self.fetch_data()
             if data:
                 self.client.publish(self.data_topic, json.dumps(data))
-                logging.info(f"Published data to topic %s" % self.data_topic)
+                logging.info("Published data to topic %s" % self.data_topic)
         except Exception as e:
-            logging.error(f"Failed to publish data with error: %s" % e)
+            logging.error("Failed to publish data with error: %s" % e)
 
     def fetch_data(self):
         try:
@@ -123,7 +125,7 @@ class MQTTCryptoClient:
             ]
             return {"timestamp": timestamp, "crypto": cryptos}
         except requests.RequestException as e:
-            logging.error(f"Failed to fetch data with error: %s" % e)
+            logging.error("Failed to fetch data with error: %s" % e)
             return None
 
 
@@ -141,7 +143,10 @@ if __name__ == "__main__":
         help="The MQTT broker address, default is localhost",
     )
     parser.add_argument(
-        "--port", type=int, default=1883, help="The MQTT broker port, default is 1883"
+        "--port",
+        type=int,
+        default=1883,
+        help="The MQTT broker port, default is 1883"
     )
     parser.add_argument(
         "--topic",
@@ -175,4 +180,4 @@ if __name__ == "__main__":
         )
         client.run()
     except KeyboardInterrupt:
-        logging.info(f"Client stopped via keyboard interrupt")
+        logging.info("Client stopped via keyboard interrupt")

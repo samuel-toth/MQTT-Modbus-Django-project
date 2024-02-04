@@ -17,7 +17,8 @@ class MQTTMongoBridge:
     """
     A class that represents a bridge between MQTT and MongoDB.
 
-    This class subscribes to an MQTT topic, receives data, and persists it to a MongoDB collection at a specified interval.
+    This class subscribes to an MQTT topic, receives data, and persists
+    it to a MongoDB collection at a specified interval.
 
     Args:
         broker_host (str): The hostname of the MQTT broker.
@@ -53,7 +54,8 @@ class MQTTMongoBridge:
             tls_version=ssl.PROTOCOL_TLS,
         )
         self.mqtt_client.username_pw_set(
-            username=os.getenv("MQTT_USERNAME"), password=os.getenv("MQTT_PASSWORD")
+            username=os.getenv("MQTT_USERNAME"),
+            password=os.getenv("MQTT_PASSWORD")
         )
 
         self.mqtt_client.on_connect = partial(self.on_connect)
@@ -73,20 +75,20 @@ class MQTTMongoBridge:
             data["device_id"] = msg.topic.split("/")[-1]
             self.collection.insert_one(data)
             logging.info(
-                f"Received data from device {data['device_id']}, inserting to MongoDB"
+                f"Received data from {data['device_id']}, inserting to MongoDB"
             )
         except Exception as e:
             logging.error(f"Failed to insert data with error: {e}")
 
     def run(self):
         self.mqtt_client.connect(self.broker_host, self.broker_port)
-        logging.info(f"Starting MQTT client")
+        logging.info("Starting MQTT client")
         try:
             self.mqtt_client.loop_forever(
                 timeout=10, max_packets=1, retry_first_connection=True
             )
         except KeyboardInterrupt:
-            logging.info(f"Service interrupted by keyboard")
+            logging.info("Service interrupted by keyboard")
         finally:
             self.mqtt_client.disconnect()
             self.mongo_client.close()
@@ -101,10 +103,16 @@ if __name__ == "__main__":
         description="Service for persisting MQTT data to MongoDB"
     )
     parser.add_argument(
-        "--broker_host", type=str, default="localhost", help="The MQTT broker address"
+        "--broker_host",
+        type=str,
+        default="localhost",
+        help="The MQTT broker address"
     )
     parser.add_argument(
-        "--broker_port", type=int, default=1883, help="The MQTT broker port"
+        "--broker_port",
+        type=int,
+        default=1883,
+        help="The MQTT broker port"
     )
     parser.add_argument(
         "--topic",
@@ -113,10 +121,16 @@ if __name__ == "__main__":
         help="The MQTT topic to subscribe to",
     )
     parser.add_argument(
-        "--mongo_host", type=str, default="localhost", help="The MongoDB host address"
+        "--mongo_host",
+        type=str,
+        default="localhost",
+        help="The MongoDB host address"
     )
     parser.add_argument(
-        "--mongo_port", type=int, default=27017, help="The MongoDB port"
+        "--mongo_port",
+        type=int,
+        default=27017,
+        help="The MongoDB port"
     )
     args = parser.parse_args()
 
@@ -132,4 +146,4 @@ if __name__ == "__main__":
         )
         bridge.run()
     except KeyboardInterrupt:
-        logging.info(f"Service interrupted by keyboard")
+        logging.info("Service interrupted by keyboard")

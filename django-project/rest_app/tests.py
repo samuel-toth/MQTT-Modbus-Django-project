@@ -1,5 +1,4 @@
 from django.test import TestCase
-from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from rest_framework.authtoken.models import Token
 from rest_framework import status
@@ -48,7 +47,9 @@ class UserRegisterTest(TestCase):
     def test_user_register_password_mismatch(self):
         response = self.client.post(
             "/api/register",
-            {"username": "newuser", "password": "password", "password2": "password2"},
+            {"username": "newuser",
+             "password": "password",
+             "password2": "password2"},
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -280,7 +281,7 @@ class GetModbusDataByTimestampViewTest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + self.token.key)
 
     @patch("rest_app.mongo_service.MongoService.find_modbus_data_by_timestamp")
-    def test_get_modbus_data_by_timestamp_authenticated(self, mock_find_by_timestamp):
+    def test_get_mb_data_by_timestamp_auth(self, mock_find_by_timestamp):
         mock_data = [
             {"timestamp": 1706544941355, "value": "data1"},
             {"timestamp": 1706544941354, "value": "data2"},
@@ -288,17 +289,19 @@ class GetModbusDataByTimestampViewTest(APITestCase):
         mock_find_by_timestamp.return_value = mock_data
 
         response = self.client.get(
-            "/api/modbus/data/timestamp", {"timestamp": 1706544941355})
+            "/api/modbus/data/timestamp", {"timestamp": 1706544941355}
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["data"], mock_data)
         mock_find_by_timestamp.assert_called_once_with(str(1706544941355))
 
-    def test_get_modbus_data_by_timestamp_not_authenticated(self):
+    def test_get_mb_data_by_timestamp_not_auth(self):
         self.client.credentials()
 
         response = self.client.get(
-            "/api/modbus/data/timestamp", {"timestamp": 1706544941355})
+            "/api/modbus/data/timestamp", {"timestamp": 1706544941355}
+        )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(
@@ -306,25 +309,27 @@ class GetModbusDataByTimestampViewTest(APITestCase):
                 "detail"], "Authentication credentials were not provided."
         )
 
-    def test_get_modbus_data_by_timestamp_invalid_token(self):
+    def test_get_mb_data_by_timestamp_invalid_token(self):
         self.client.credentials(HTTP_AUTHORIZATION="Token invalidtoken")
 
         response = self.client.get(
-            "/api/modbus/data/timestamp", {"timestamp": 1706544941355})
+            "/api/modbus/data/timestamp", {"timestamp": 1706544941355}
+        )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(response.json()["detail"], "Invalid token.")
 
-    def test_get_modbus_data_by_timestamp_no_timestamp(self):
+    def test_get_mb_data_by_timestamp_no_timestamp(self):
         response = self.client.get("/api/modbus/data/timestamp", {})
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["error"],
                          "UNIX timestamp is required.")
 
-    def test_get_modbus_data_by_timestamp_invalid_timestamp(self):
+    def test_get_mb_data_by_timestamp_invalid_timestamp(self):
         response = self.client.get(
-            "/api/modbus/data/timestamp", {"timestamp": "invalidtimestamp"})
+            "/api/modbus/data/timestamp", {"timestamp": "invalidtimestamp"}
+        )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["error"],

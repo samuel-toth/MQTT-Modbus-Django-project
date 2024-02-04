@@ -27,7 +27,8 @@ class ModbusPersistenceClient:
         mongo_port (int): The port number of the MongoDB server.
         mongo_db (str): The name of the MongoDB database.
         mongo_collection (str): The name of the MongoDB collection.
-        interval (int): The interval in seconds between each reading and persistence.
+        interval (int): The interval in seconds between each reading
+        and persistence.
     """
 
     def __init__(
@@ -67,9 +68,9 @@ class ModbusPersistenceClient:
         self.interval = interval
 
         if self.modbus_client.connect():
-            logging.info(f"Connected to Modbus server")
+            logging.info("Connected to Modbus server")
         else:
-            raise ModbusException(f"Failed to connect to Modbus server")
+            raise ModbusException("Failed to connect to Modbus server")
 
     def run(self):
         try:
@@ -88,21 +89,21 @@ class ModbusPersistenceClient:
                         decoded_values.append(builder.decode_32bit_float())
 
                     ranked_values = {
-                        str(i + 1): value for i, value in enumerate(decoded_values)
+                        str(i+1): val for i, val in enumerate(decoded_values)
                     }
 
                     self.collection.insert_one(
                         {"value": ranked_values,
                             "timestamp": int(time.time())}
                     )
-                    logging.info(f"Values persisted to database")
+                    logging.info("Values persisted to database")
                 else:
                     logging.error(f"Modbus error: {response}")
                 time.sleep(int(self.interval))
         except Exception as e:
             logging.error(f"Client error: {e}")
         finally:
-            logging.info(f"Stoping client")
+            logging.info("Stoping client")
             if self.modbus_client:
                 self.modbus_client.close()
             if self.mongo_client:
@@ -130,7 +131,10 @@ if __name__ == "__main__":
         help="The Modbus server port, default is 5020",
     )
     parser.add_argument(
-        "--mongo_host", type=str, default="localhost", help="The MongoDB host address"
+        "--mongo_host",
+        type=str,
+        default="localhost",
+        help="The MongoDB host address"
     )
     parser.add_argument(
         "--mongo_port", type=int, default=27017, help="The MongoDB port"
@@ -155,6 +159,6 @@ if __name__ == "__main__":
         )
         mb_persistence_client.run()
     except KeyboardInterrupt:
-        logging.info(f"Service stopped via keyboard interrupt")
+        logging.info("Service stopped via keyboard interrupt")
         mb_persistence_client.modbus_client.close()
         mb_persistence_client.mongo_client.close()

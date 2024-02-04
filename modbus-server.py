@@ -30,7 +30,6 @@ def setup_server_context():
 
 
 def update_registers(context, interval):
-    index = 0
     while True:
         address = 0
         price = fetch_data()  # list of tuples (rank, priceUsd)
@@ -69,7 +68,7 @@ if __name__ == "__main__":
     )
 
     parser = argparse.ArgumentParser(
-        description="Modbus server for fetching and storing Bitcoin price to registers"
+        description="Modbus server for storing Bitcoin price to registers"
     )
     parser.add_argument(
         "--host",
@@ -114,5 +113,5 @@ if __name__ == "__main__":
     except ModbusException as e:
         logging.error(f"Modbus error: {e}")
     except KeyboardInterrupt:
-        logging.info(f"Modbus server stopped by user.")
+        logging.info("Modbus server stopped by user.")
         thread.join()
