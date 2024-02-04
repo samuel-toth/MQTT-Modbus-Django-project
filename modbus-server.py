@@ -1,21 +1,23 @@
 import os
+import ssl
 import time
 import logging
 import argparse
+from pymodbus import ModbusException
 import requests
 import threading
 
-from pymodbus.server import StartTcpServer
+from pymodbus.server import StartTlsServer
 from pymodbus.payload import BinaryPayloadBuilder, Endian
 from pymodbus.datastore import (
     ModbusSequentialDataBlock,
     ModbusServerContext,
     ModbusSlaveContext,
 )
+from pymodbus.framer import Framer
 from dotenv import load_dotenv
 
 load_dotenv()
-
 
 class ModbusServer:
     """
@@ -63,9 +65,25 @@ class ModbusServer:
 
     def run(self):
         logging.info(f"Starting Modbus server at {self.host}:{self.port}")
-        StartTcpServer(
-            context=self.context, address=(
-                self.host, self.port), broadcast_enable=True
+
+        ssl_context = ssl.create_default_context(
+            ssl.Purpose.CLIENT_AUTH, cafile=os.getenv("MODBUS_CA_CERT_PATH")
+        )
+
+        ssl_context.load_cert_chain(
+            certfile=os.getenv("MODBUS_SERVER_CERT_PATH"),
+            keyfile=os.getenv("MODBUS_SERVER_KEY_PATH"),
+        )
+
+
+        StartTlsServer(
+            context=self.context, 
+            identity="modbus-server",
+            sslctx = ssl_context,
+            address=(self.host, self.port),
+            framer=Framer.TLS,
+            broadcast_enable=True,
+            ignore_missing_slaves=True,
         )
 
     def fetch_data(self):
@@ -82,7 +100,7 @@ class ModbusServer:
 if __name__ == "__main__":
 
     logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+        level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
     )
 
     parser = argparse.ArgumentParser(
@@ -104,7 +122,7 @@ if __name__ == "__main__":
         "--interval",
         type=int,
         default=60,
-        help="Interval in seconds to update register values, default is 60",
+        help="Interval in seconds to update register values, default is 10",
     )
     args = parser.parse_args()
 
@@ -113,6 +131,8 @@ if __name__ == "__main__":
         update_thread = threading.Thread(target=server.update_registers)
         update_thread.start()
         server.run()
+    except ModbusException as e:
+        logging.error(f"Modbus error: {e}")
     except KeyboardInterrupt:
         logging.info(f"Modbus server stopped by user.")
     finally:

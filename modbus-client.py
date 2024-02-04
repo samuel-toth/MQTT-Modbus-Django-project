@@ -1,19 +1,25 @@
 import os
+import ssl
 import time
 import logging
 import argparse
 
 from pymongo import MongoClient
-from pymodbus.client import ModbusTcpClient
+from pymodbus.client import ModbusTlsClient
 from pymodbus.exceptions import ModbusException
 from pymodbus.payload import BinaryPayloadDecoder, Endian
+from dotenv import load_dotenv
 
+load_dotenv()
+
+ssl_logger = logging.getLogger('ssl')
+ssl_logger.setLevel(logging.DEBUG)
 
 class ModbusPersistenceClient:
     """
     A class representing a Modbus persistence client.
 
-    This client connects to a Modbus server, reads holding registers 
+    This client connects to a Modbus server, reads holding registers
     and persists the values to a MongoDB database at a specified interval.
 
     Args:
@@ -36,8 +42,27 @@ class ModbusPersistenceClient:
         mongo_collection,
         interval,
     ):
+        
+        ssl_context = ssl.create_default_context(
+            ssl.Purpose.SERVER_AUTH, cafile=os.getenv("MODBUS_CA_CERT_PATH")
+        )
 
-        self.modbus_client = ModbusTcpClient(modbus_host, modbus_port)
+        ssl_context.load_cert_chain(
+            certfile=os.getenv("MODBUS_CLIENT_CERT_PATH"),
+            keyfile=os.getenv("MODBUS_CLIENT_KEY_PATH"),
+        )
+
+        self.modbus_client = ModbusTlsClient(
+            host=modbus_host, port=modbus_port, 
+            sslctx=ssl_context,
+            server_hostname="localhost",
+            timeout=5,
+            retries=3,
+            retry_on_empty=True,
+            close_comm_on_error=False,
+            
+
+        )
 
         self.mongo_client = MongoClient(mongo_host, mongo_port)
         self.db = self.mongo_client[mongo_db]
@@ -64,9 +89,11 @@ class ModbusPersistenceClient:
                     decoded_value = builder.decode_32bit_float()
 
                     self.collection.insert_one({"value": decoded_value})
-                    logging.info(
-                        f"Value {decoded_value} persisted to database")
+                    logging.info(f"Value {decoded_value} persisted to database")
+                else:
+                    logging.error(f"Modbus error: {response}")
                 time.sleep(int(self.interval))
+
         except Exception as e:
             logging.error(f"Client error: {e}")
         finally:
@@ -80,11 +107,10 @@ class ModbusPersistenceClient:
 if __name__ == "__main__":
 
     logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+        level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
     )
 
-    parser = argparse.ArgumentParser(
-        description="Modbus client for data persistence")
+    parser = argparse.ArgumentParser(description="Modbus client for data persistence")
     parser.add_argument(
         "--modbus_host",
         type=str,
