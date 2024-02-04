@@ -30,27 +30,33 @@ def setup_server_context():
 
 
 def update_registers(context, interval):
+    index = 0
     while True:
-        address = 0x00
-        price = fetch_data()
+        address = 0
+        price = fetch_data()  # list of tuples (rank, priceUsd)
 
         builder = BinaryPayloadBuilder(byteorder=Endian.LITTLE)
-        builder.add_32bit_float(float(price))
-        payload = builder.to_registers()
+        for coin in price:
+            builder.add_32bit_float(float(coin[1]))
 
-        context[0x01].setValues(3, address, payload)
-        logging.info(
-            f"Updated register values at address {address} with payload {payload}"
-        )
+            payload = builder.to_registers()
+            context[0].setValues(3, address, payload)
+            address + 1
+            logging.info(
+                f"Updated register values at address {address}"
+            )
+
         time.sleep(interval)
 
 
-def fetch_data():
+def fetch_data() -> (int, float):
     try:
-        response = requests.get(os.getenv("COINCAP_API_URL") + "/bitcoin")
+        response = requests.get(os.getenv("COINCAP_API_URL"))
         data = response.json()
-        price = data.get("data").get("priceUsd")
-        return price
+
+        prices = [(coin["rank"], coin["priceUsd"]) for coin in data["data"]]
+
+        return prices
     except requests.RequestException as e:
         logging.error(f"Failed to fetch data with error: {e}")
         return None

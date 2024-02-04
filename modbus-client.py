@@ -54,9 +54,10 @@ class ModbusPersistenceClient:
         ssl_context.verify_mode = ssl.CERT_NONE
 
         self.modbus_client = ModbusTlsClient(
-            host=modbus_host, port=modbus_port,
+            host=modbus_host,
+            port=modbus_port,
             sslctx=ssl_context,
-            server_hostname="localhost"
+            server_hostname="localhost",
         )
 
         self.mongo_client = MongoClient(mongo_host, mongo_port)
@@ -73,19 +74,28 @@ class ModbusPersistenceClient:
     def run(self):
         try:
             while True:
+
                 response = self.modbus_client.read_holding_registers(
-                    0, 2, unit=1)
+                    0, 20, unit=1)
                 if not response.isError():
-                    builder = BinaryPayloadDecoder.fromRegisters(
-                        response.registers, byteorder=Endian.LITTLE
+                    decoded_values = []
+                    for i in range(0, len(response.registers), 2):
+                        builder = BinaryPayloadDecoder.fromRegisters(
+                            [response.registers[i], response.registers[i + 1]],
+                            byteorder=Endian.LITTLE,
+                        )
+
+                        decoded_values.append(builder.decode_32bit_float())
+
+                    ranked_values = {
+                        str(i + 1): value for i, value in enumerate(decoded_values)
+                    }
+
+                    self.collection.insert_one(
+                        {"value": ranked_values,
+                            "timestamp": int(time.time())}
                     )
-
-                    decoded_value = builder.decode_32bit_float()
-
-                    self.collection.insert_one({"value": decoded_value,
-                                                "timestamp": int(time.time())})
-                    logging.info(
-                        f"Value {decoded_value} persisted to database")
+                    logging.info(f"Values persisted to database")
                 else:
                     logging.error(f"Modbus error: {response}")
                 time.sleep(int(self.interval))
@@ -140,7 +150,7 @@ if __name__ == "__main__":
             mongo_host=args.mongo_host,
             mongo_port=args.mongo_port,
             mongo_db=os.getenv("MONGO_DB"),
-            mongo_collection=os.getenv("MONGO_MODBUS_COLLECTION"),
+            mongo_collection=os.getenv("MODBUS_MONGO_COLLECTION"),
             interval=args.interval,
         )
         mb_persistence_client.run()
