@@ -82,7 +82,8 @@ class ModbusPersistenceClient:
 
                     decoded_value = builder.decode_32bit_float()
 
-                    self.collection.insert_one({"value": decoded_value})
+                    self.collection.insert_one({"value": decoded_value,
+                                                "timestamp": int(time.time())})
                     logging.info(
                         f"Value {decoded_value} persisted to database")
                 else:
@@ -139,7 +140,7 @@ if __name__ == "__main__":
             mongo_host=args.mongo_host,
             mongo_port=args.mongo_port,
             mongo_db=os.getenv("MONGO_DB"),
-            mongo_collection=os.getenv("MONGO_COLLECTION"),
+            mongo_collection=os.getenv("MONGO_MODBUS_COLLECTION"),
             interval=args.interval,
         )
         mb_persistence_client.run()

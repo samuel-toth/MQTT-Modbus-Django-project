@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class MQTTMongoBridge:
     """
     A class that represents a bridge between MQTT and MongoDB.
@@ -127,7 +128,7 @@ if __name__ == "__main__":
             mongo_host=args.mongo_host,
             mongo_port=args.mongo_port,
             mongo_db=os.getenv("MONGO_DB"),
-            mongo_collection=os.getenv("MONGO_COLLECTION"),
+            mongo_collection=os.getenv("MQTT_MONGO_COLLECTION"),
         )
         bridge.run()
     except KeyboardInterrupt:
