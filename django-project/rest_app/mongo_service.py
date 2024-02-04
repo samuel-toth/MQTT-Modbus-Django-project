@@ -5,27 +5,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MONGO_HOST = os.getenv("MONGO_HOST")
-MONGO_PORT = int(os.getenv("MONGO_PORT"))
-MONGO_DB = os.getenv("MONGO_DB")
-MQTT_MONGO_COLLECTION = os.getenv("MQTT_MONGO_COLLECTION")
-MODBUS_MONGO_COLLECTION = os.getenv("MODBUS_MONGO_COLLECTION")
-
 
 class MongoService:
 
     def __init__(
         self,
-        host=MONGO_HOST,
-        port=MONGO_PORT,
-        db=MONGO_DB,
-        mqtt_col=MQTT_MONGO_COLLECTION,
-        mb_col=MODBUS_MONGO_COLLECTION,
+        db=os.getenv("MONGO_DB"),
+        mqtt_col=os.getenv("MQTT_MONGO_COLLECTION"),
+        mb_col=os.getenv("MODBUS_MONGO_COLLECTION"),
     ):
-        self.client = MongoClient(host, port)
+        self.client = MongoClient(os.getenv("MONGO_URI"))
         self.db = self.client[db]
-        self.mb_col = self.db[mqtt_col]
-        self.mqtt_col = self.db[mb_col]
+        self.mb_col = self.db[mb_col]
+        self.mqtt_col = self.db[mqtt_col]
 
     def find_all_mqtt_data(self):
         return list(self.mqtt_col.find())

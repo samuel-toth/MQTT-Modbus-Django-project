@@ -12,7 +12,6 @@ from bson import json_util
 from .mqtt_service import MQTTService
 from .mongo_service import MongoService
 
-# Create your views here.
 
 mongo_service = MongoService()
 mqtt_service = MQTTService()
