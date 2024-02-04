@@ -12,8 +12,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-ssl_logger = logging.getLogger('ssl')
-ssl_logger.setLevel(logging.DEBUG)
 
 class ModbusPersistenceClient:
     """
@@ -42,7 +40,7 @@ class ModbusPersistenceClient:
         mongo_collection,
         interval,
     ):
-        
+
         ssl_context = ssl.create_default_context(
             ssl.Purpose.SERVER_AUTH, cafile=os.getenv("MODBUS_CA_CERT_PATH")
         )
@@ -52,16 +50,13 @@ class ModbusPersistenceClient:
             keyfile=os.getenv("MODBUS_CLIENT_KEY_PATH"),
         )
 
-        self.modbus_client = ModbusTlsClient(
-            host=modbus_host, port=modbus_port, 
-            sslctx=ssl_context,
-            server_hostname="localhost",
-            timeout=5,
-            retries=3,
-            retry_on_empty=True,
-            close_comm_on_error=False,
-            
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
 
+        self.modbus_client = ModbusTlsClient(
+            host=modbus_host, port=modbus_port,
+            sslctx=ssl_context,
+            server_hostname="localhost"
         )
 
         self.mongo_client = MongoClient(mongo_host, mongo_port)
@@ -79,8 +74,7 @@ class ModbusPersistenceClient:
         try:
             while True:
                 response = self.modbus_client.read_holding_registers(
-                    address=0, count=2, slave=0x01
-                )
+                    0, 2, unit=1)
                 if not response.isError():
                     builder = BinaryPayloadDecoder.fromRegisters(
                         response.registers, byteorder=Endian.LITTLE
@@ -89,11 +83,11 @@ class ModbusPersistenceClient:
                     decoded_value = builder.decode_32bit_float()
 
                     self.collection.insert_one({"value": decoded_value})
-                    logging.info(f"Value {decoded_value} persisted to database")
+                    logging.info(
+                        f"Value {decoded_value} persisted to database")
                 else:
                     logging.error(f"Modbus error: {response}")
                 time.sleep(int(self.interval))
-
         except Exception as e:
             logging.error(f"Client error: {e}")
         finally:
@@ -107,10 +101,11 @@ class ModbusPersistenceClient:
 if __name__ == "__main__":
 
     logging.basicConfig(
-        level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
 
-    parser = argparse.ArgumentParser(description="Modbus client for data persistence")
+    parser = argparse.ArgumentParser(
+        description="Modbus client for data persistence")
     parser.add_argument(
         "--modbus_host",
         type=str,
@@ -138,7 +133,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        modbus_client = ModbusPersistenceClient(
+        mb_persistence_client = ModbusPersistenceClient(
             modbus_host=args.modbus_host,
             modbus_port=args.modbus_port,
             mongo_host=args.mongo_host,
@@ -147,8 +142,8 @@ if __name__ == "__main__":
             mongo_collection=os.getenv("MONGO_COLLECTION"),
             interval=args.interval,
         )
-
-        modbus_client.run()
+        mb_persistence_client.run()
     except KeyboardInterrupt:
-        modbus_client.close_connections()
         logging.info(f"Service stopped via keyboard interrupt")
+        mb_persistence_client.modbus_client.close()
+        mb_persistence_client.mongo_client.close()
